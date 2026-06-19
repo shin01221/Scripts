@@ -16,12 +16,11 @@ is_kitty_protocol() {
 }
 
 has_sixel() {
-    [ -n "$GHOSTTY_RESOURCES_DIR" ] && return 0
     case "$TERM_PROGRAM" in
         foot) return 0 ;;
     esac
     case "$TERM" in
-        foot|foot-*|*-ghostty|*-sixel) return 0 ;;
+        foot|foot-*|*-sixel) return 0 ;;
     esac
     return 1
 }
@@ -75,7 +74,7 @@ display_image() {
     converted=$(convert_image "$img") || { echo "Cannot display: $(basename "$img")"; return; }
 
     if ! in_tmux && has_sixel && has_cmd chafa; then
-        display_image_sixel "$converted" || display_image_chafa "$converted"
+        display_image_sixel "$converted" || display_image_kitty "$converted" || display_image_chafa "$converted"
     elif ! in_tmux && is_kitty_protocol && has_cmd chafa; then
         display_image_kitty "$converted" || display_image_chafa "$converted"
     elif has_cmd chafa; then
