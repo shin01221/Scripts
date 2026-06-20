@@ -68,15 +68,24 @@ convert_image() {
     echo "$img"
 }
 
+image_allowed_in_tmux() {
+    in_tmux || return 0
+    [ "$(tmux show -g allow-passthrough 2>/dev/null)" = "on" ]
+}
+
 display_image() {
     local img="$1"
     local converted
     converted=$(convert_image "$img") || { echo "Cannot display: $(basename "$img")"; return; }
 
-    if ! in_tmux && has_sixel && has_cmd chafa; then
-        display_image_sixel "$converted" || display_image_kitty "$converted" || display_image_chafa "$converted"
-    elif ! in_tmux && is_kitty_protocol && has_cmd chafa; then
-        display_image_kitty "$converted" || display_image_chafa "$converted"
+    if image_allowed_in_tmux && has_cmd chafa; then
+        if has_sixel; then
+            display_image_sixel "$converted" || display_image_kitty "$converted" || display_image_chafa "$converted"
+        elif is_kitty_protocol; then
+            display_image_kitty "$converted" || display_image_chafa "$converted"
+        else
+            display_image_chafa "$converted"
+        fi
     elif has_cmd chafa; then
         display_image_chafa "$converted"
     else

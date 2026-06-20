@@ -107,7 +107,19 @@ process_file() {
 
 case "$mode" in
 --resize-height | --resize-width | --downscale)
-	if $replace_flag; then
+	if $batch_flag; then
+		[ -d "$1" ] || { echo "Error: '$1' is not a directory" >&2; exit 1; }
+		dir="$1"
+		val="$2"
+		[[ -z "$val" ]] && { echo "Error: Missing value argument for $mode" >&2; exit 1; }
+		position="$3"
+
+		fail=0
+		while IFS= read -r -d '' img; do
+			process_file "$img" "$img" "$mode" "$val" "$position" || fail=1
+		done < <(find "$dir" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" \) -print0)
+		exit $fail
+	elif $replace_flag; then
 		case "$mode" in
 		--downscale)
 			last_idx=$((${#args[@]} - 1))
@@ -136,18 +148,6 @@ case "$mode" in
 			[ -f "$input" ] || { echo "Error: '$input' is not a file" >&2; fail=1; continue; }
 			process_file "$input" "$input" "$mode" "$val" "$position" || fail=1
 		done
-		exit $fail
-	elif $batch_flag; then
-		[ -d "$1" ] || { echo "Error: '$1' is not a directory" >&2; exit 1; }
-		dir="$1"
-		val="$2"
-		[[ -z "$val" ]] && { echo "Error: Missing value argument for $mode" >&2; exit 1; }
-		position="$3"
-
-		fail=0
-		while IFS= read -r -d '' img; do
-			process_file "$img" "$img" "$mode" "$val" "$position" || fail=1
-		done < <(find "$dir" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" \) -print0)
 		exit $fail
 	elif [ -d "$1" ]; then
 		dir="$1"
